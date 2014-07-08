@@ -342,12 +342,11 @@ class SpearalDecoder extends SpearalType {
 			return this._sharedObjects[indexOrLength];
 
 		var description = (
-			(parameterizedType & 0x04) !== 0 ?
-			this._sharedStrings[indexOrLength] :
-			decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
-		);
-		
-		var parts = description.split('#'),
+				(parameterizedType & 0x04) !== 0 ?
+				this._sharedStrings[indexOrLength] :
+				decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
+			),
+			parts = description.split('#'),
 			className = parts[0],
 			propertyNames = parts[1].split(','),
 			value = { _class: className };
