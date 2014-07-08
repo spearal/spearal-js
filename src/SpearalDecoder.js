@@ -332,7 +332,7 @@ class SpearalDecoder extends SpearalType {
 	}
 	
 	_readClass(parameterizedType) {
-		// TODO
+		return window[this._readString(parameterizedType)];
 	}
 	
 	_readBean(parameterizedType) {

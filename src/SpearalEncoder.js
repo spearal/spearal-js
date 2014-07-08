@@ -143,31 +143,37 @@ class SpearalEncoder extends SpearalType {
 		return this._buffer.getBuffer();
 	}
 	
-	writeAny(object) {
-		if (object === null || object === undefined) {
+	writeAny(value) {
+		if (value === null || value === undefined) {
 			this.writeNull();
 			return;
 		}
 
-		switch (typeof object) {
+		switch (typeof value) {
 		case 'boolean':
-			this.writeBoolean(object);
+			this.writeBoolean(value);
 			break;
 		case 'number':
-			this.writeFloating(object);
+			this.writeFloating(value);
 			break;
 		case 'string':
-			this.writeString(object);
+			this.writeString(value);
+			break;
+		case 'function':
+			if (value.name !== undefined && value.name !== '' && window[value.name] !== undefined)
+				this.writeClass(value);
+			else
+				this.writeAny(value());
 			break;
 		case 'object':
-			if (object instanceof Date)
-				this.writeDate(object);
-			else if (object instanceof ArrayBuffer)
-				this.writeByteArray(object);
-			else if (SpearalEncoder._isArrayBufferView(object))
-				this.writeByteArray(object.buffer);
+			if (value instanceof Date)
+				this.writeDate(value);
+			else if (value instanceof ArrayBuffer)
+				this.writeByteArray(value);
+			else if (SpearalEncoder._isArrayBufferView(value))
+				this.writeByteArray(value.buffer);
 			else
-				this.writeBean(object);
+				this.writeBean(value);
 			break;
 		}
 	}
@@ -297,6 +303,10 @@ class SpearalEncoder extends SpearalType {
 			this._buffer.writeUint8(value.getUTCSeconds());
 			this._buffer.writeUintN(millis, length0);
 		}
+	}
+	
+	writeClass(value) {
+		this._writeStringData(this.CLASS, value.name);
 	}
 	
 	writeBean(value) {

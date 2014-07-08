@@ -11,7 +11,7 @@ describe('Spearal Byte Array Coding', function() {
 		var copy = new SpearalDecoder(buffer).readAny();
 		expect(copy instanceof ArrayBuffer).toBeTruthy();
 		
-		if (value.buffer instanceof ArrayBuffer)
+		if (SpearalEncoder._isArrayBufferView(value))
 			expect(copy).toEqual(value.buffer);
 		else
 			expect(copy).toEqual(value);
