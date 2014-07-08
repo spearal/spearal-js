@@ -172,9 +172,6 @@ class SpearalDecoder extends SpearalType {
 		case this.FALSE:
 			return false;
 		
-		/*case this.DATE:
-			return this._readDate(parameterizedType);*/
-		
 		case this.INTEGRAL:
 			return this._readIntegral(parameterizedType);
 		
@@ -183,6 +180,9 @@ class SpearalDecoder extends SpearalType {
 		
 		case this.STRING:
 			return this._readString(parameterizedType);
+			
+		case this.DATE_TIME:
+			return this._readDateTime(parameterizedType);
 		
 		case this.BEAN:
 			return this._readBean(parameterizedType);
@@ -245,28 +245,49 @@ class SpearalDecoder extends SpearalType {
 		return value;
 	}
 	
-	/*
-	_readDate(parameterizedType) {
-		var utcFullYear = this._buffer.readInt16();
+	_readDateTime(parameterizedType) {
+		var hasDate = ((parameterizedType & 0x08) != 0),
+			hasTime = ((parameterizedType & 0x04) != 0),
+			year = 0,
+			month = 0,
+			date = 0,
+			hours = 0,
+			minutes = 0,
+			seconds = 0,
+			millis = 0,
+			subsecondsType;
 		
-		var tmpU16 = this._buffer.readUint16();
-		var utcMonth = (tmpU16 >>> 11),
-			utcDate = ((tmpU16 >>> 6) & 0x3f),
-			utcHours = (tmpU16 & 0x3f);
+		if (hasDate) {
+			month = this._buffer.readUint8();
+			date = this._buffer.readUint8();
+			
+			year = this._buffer.readUintN((month >>> 4) & 0x03);
+			if ((month & 0x80) != 0)
+				year = -year;
+			year += 2000;
+
+			month &= 0x0f;
+			month--;
+		}
 		
-		tmpU16 = this._buffer.readUint16();
-		var utcMinutes = (tmpU16 >>> 10),
-			utcSeconds = ((tmpU16 >>> 8) & 0x3f),
-			utcMilliseconds = ((tmpU16 & 0x0f) << 6);
+		if (hasTime) {
+			hours = this._buffer.readUint8();
+			minutes = this._buffer.readUint8();
+			seconds = this._buffer.readUint8();
+			
+			subsecondsType = (parameterizedType & 0x03);
+			if (subsecondsType !== 0) {
+				millis = this._buffer.readUintN(hours >>> 5);
+				if (subsecondsType === 1)
+					millis /= 1000000;
+				else if (subsecondsType === 2)
+					millis /= 1000;
+    		}
+    		
+    		hours &= 0x1f;
+		}
 		
-		tmpU16 = this._buffer.readUint16();
-		utcMilliseconds |= (tmpU16 >>> 10);
-		
-		return new Date(Date.UTC(
-			utcFullYear, utcMonth, utcDate,
-			utcHours, utcMinutes, utcSeconds, utcMilliseconds
-		));
+		return new Date(Date.UTC(year, month, date, hours, minutes, seconds, millis));
 	}
-	*/
 }
     

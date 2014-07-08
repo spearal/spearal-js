@@ -153,9 +153,10 @@ class SpearalEncoder extends SpearalType {
 			this.writeString(object);
 			break;
 		case 'object':
-			/*if (object instanceof Date)
-				this.writeDate(object);*/
-			this.writeObject(object);
+			if (object instanceof Date)
+				this.writeDate(object);
+			else
+				this.writeObject(object);
 			break;
 		}
 	}
@@ -247,28 +248,41 @@ class SpearalEncoder extends SpearalType {
 			this.writeAny(value[propertyNames[i]]);
 	}
 	
-	/*
 	writeDate(value) {
-		this._buffer.writeUint8(this.DATE);
+		if (Number.isNaN(value.getTime())) {
+			this.writeNull();
+			return;
+		}
 		
-		// [YYYY YYYY][YYYY YYYY] (signed)
-		this._buffer.writeInt16(value.getUTCFullYear());
-		// [0MMM MDDD][DDhh hhhh] (unsigned)
-		this._buffer.writeUint16(
-			(value.getUTCMonth() << 11) |
-			(value.getUTCDate() << 6) |
-			value.getUTCHours()
-		);
-		// [mmmm mmss][ssss xxxx] (unsigned)
-		this._buffer.writeUint16(
-			(value.getUTCMinutes() << 10) |
-			(value.getUTCSeconds() << 4) |
-			(value.getUTCMilliseconds() >>> 6)
-		);
-		// [xxxx xx00][0000 0000] (unsigned)
-		this._buffer.writeUint16((value.getUTCMilliseconds() & 0x3f) << 10);
+		var year = value.getUTCFullYear() - 2000,
+			millis = value.getUTCMilliseconds();
+		
+		this._buffer.writeUint8(this.DATE_TIME | 0x0C | (millis !== 0 ? 0x03 : 0x00));
+		
+		var inverse = 0x00;
+		if (year < 0) {
+			inverse = 0x80;
+			year = -year;
+		}
+		
+		var length0 = this._unsignedIntLength0(year);
+		this._buffer.writeUint8(inverse | (length0 << 4) | (value.getUTCMonth() + 1));
+		this._buffer.writeUint8(value.getUTCDate());
+		this._buffer.writeUintN(year, length0);
+		
+		if (millis === 0) {
+			this._buffer.writeUint8(value.getUTCHours());
+			this._buffer.writeUint8(value.getUTCMinutes());
+			this._buffer.writeUint8(value.getUTCSeconds());
+		}
+		else {
+			length0 = this._unsignedIntLength0(millis);
+			this._buffer.writeUint8((length0 << 5) | value.getUTCHours());
+			this._buffer.writeUint8(value.getUTCMinutes());
+			this._buffer.writeUint8(value.getUTCSeconds());
+			this._buffer.writeUintN(millis, length0);
+		}
 	}
-	*/
 	
 	_writeStringData(type, value) {
 		if (value.length === 0) {
