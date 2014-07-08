@@ -256,7 +256,7 @@ class SpearalEncoder extends SpearalType {
 
 		if (index !== undefined) {
 			length0 = SpearalEncoder._unsignedIntLength0(index);
-	    	this._buffer.writeUint8(this.BYTE_ARRAY | 0x04 | length0);
+	    	this._buffer.writeUint8(this.BYTE_ARRAY | 0x08 | length0);
 	    	this._buffer.writeUintN(index, length0);
 		}
 		else {
@@ -310,18 +310,29 @@ class SpearalEncoder extends SpearalType {
 	}
 	
 	writeBean(value) {
-		var className = value._class;
-		var propertyNames = [];
-		for (var property in value) {
-			if (property !== '_class' && value.hasOwnProperty(property))
-				propertyNames.push(property);
+		var index = this._sharedObjects.get(value);
+		
+		if (index !== undefined) {
+			var length0 = SpearalEncoder._unsignedIntLength0(index);
+	    	this._buffer.writeUint8(this.BEAN | 0x08 | length0);
+	    	this._buffer.writeUintN(index, length0);
 		}
+		else {
+			this._sharedObjects.set(value, this._sharedStrings.size);
 		
-		var description = className + '#' + propertyNames.join(',');
-		this._writeStringData(this.BEAN, description);
-		
-		for (var i = 0; i < propertyNames.length; i++)
-			this.writeAny(value[propertyNames[i]]);
+			var className = value._class;
+			var propertyNames = [];
+			for (var property in value) {
+				if (property !== '_class' && value.hasOwnProperty(property))
+					propertyNames.push(property);
+			}
+			
+			var description = className + '#' + propertyNames.join(',');
+			this._writeStringData(this.BEAN, description);
+			
+			for (var i = 0; i < propertyNames.length; i++)
+				this.writeAny(value[propertyNames[i]]);
+		}
 	}
 	
 	_writeStringData(type, value) {

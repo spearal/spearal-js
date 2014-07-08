@@ -338,19 +338,21 @@ class SpearalDecoder extends SpearalType {
 	_readBean(parameterizedType) {
 		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
 		
+		if ((parameterizedType & 0x08) != 0)
+			return this._sharedObjects[indexOrLength];
+
 		var description = (
 			(parameterizedType & 0x04) !== 0 ?
 			this._sharedStrings[indexOrLength] :
 			decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
 		);
 		
-		console.log('_readBean: description=' + description);
+		var parts = description.split('#'),
+			className = parts[0],
+			propertyNames = parts[1].split(','),
+			value = { _class: className };
 		
-		var parts = description.split('#');
-		var className = parts[0];
-		var propertyNames = parts[1].split(',');
-		
-		var value = { _class: className };
+		this._sharedObjects.push(value);
 		
 		for (var i = 0; i < propertyNames.length; i++)
 			value[propertyNames[i]] = this.readAny();
