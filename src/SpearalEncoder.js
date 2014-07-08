@@ -110,6 +110,12 @@ class _SpearalEncoderBuffer {
 			this._view.setUint8(this._size++, utf.charCodeAt(i));
 	}
 	
+	writeByteArray(buffer) {
+		this._ensureCapacity(buffer.byteLength);
+		new Uint8Array(this._view.buffer, this._size).set(new Uint8Array(buffer));
+		this._size += buffer.byteLength;
+	}
+	
 	_ensureCapacity(length) {
 		if (this._view.buffer.byteLength - this._size < length) {
 			var newCapacity = (
@@ -130,6 +136,7 @@ class SpearalEncoder extends SpearalType {
 	constructor() {
 		this._buffer = new _SpearalEncoderBuffer();
 		this._sharedStrings = new Map();
+		this._sharedObjects = new Map();
 	}
 	
 	get buffer() {
@@ -155,8 +162,12 @@ class SpearalEncoder extends SpearalType {
 		case 'object':
 			if (object instanceof Date)
 				this.writeDate(object);
+			else if (object instanceof ArrayBuffer)
+				this.writeByteArray(object);
+			else if (SpearalEncoder._isArrayBufferView(object))
+				this.writeByteArray(object.buffer);
 			else
-				this.writeObject(object);
+				this.writeBean(object);
 			break;
 		}
 	}
@@ -167,6 +178,28 @@ class SpearalEncoder extends SpearalType {
 
 	writeBoolean(value) {
 		this._buffer.writeUint8(value ? this.TRUE : this.FALSE);
+	}
+
+	writeIntegral(value) {
+		var inverse = 0x00;
+		if (value < 0) {
+			value = -value;
+			inverse = 0x08;
+		}
+
+		var length0;
+		if (value <= 0xffffffff) {
+			length0 = SpearalEncoder._unsignedIntLength0(value);
+			this._buffer.writeUint8(this.INTEGRAL | inverse | length0);
+			this._buffer.writeUintN(value, length0);
+		}
+		else {
+			var high32 = ((value / 0x100000000) | 0x00);
+			length0 = SpearalEncoder._unsignedIntLength0(high32);
+			this._buffer.writeUint8(this.INTEGRAL | inverse | (length0 + 4));
+			this._buffer.writeUintN(high32, length0);
+			this._buffer.writeUintN(value & 0xffffffff, 3);
+		}
 	}
 
 	writeFloating(value) {
@@ -194,7 +227,7 @@ class SpearalEncoder extends SpearalType {
 						inverse = 0x04;
 					}
 
-					var length0 = this._unsignedIntLength0(value1K);
+					var length0 = SpearalEncoder._unsignedIntLength0(value1K);
 					this._buffer.writeUint8(this.FLOATING | 0x08 | inverse | length0);
 					this._buffer.writeUintN(value1K, length0);
 
@@ -206,46 +239,28 @@ class SpearalEncoder extends SpearalType {
 		this._buffer.writeUint8(this.FLOATING);
 		this._buffer.writeFloat64(value);
 	}
-
-	writeIntegral(value) {
-		var inverse = 0x00;
-		if (value < 0) {
-			value = -value;
-			inverse = 0x08;
-		}
-
-		var length0;
-		if (value <= 0xffffffff) {
-			length0 = this._unsignedIntLength0(value);
-			this._buffer.writeUint8(this.INTEGRAL | inverse | length0);
-			this._buffer.writeUintN(value, length0);
-		}
-		else {
-			var high32 = ((value / 0x100000000) | 0x00);
-			length0 = this._unsignedIntLength0(high32);
-			this._buffer.writeUint8(this.INTEGRAL | inverse | (length0 + 4));
-			this._buffer.writeUintN(high32, length0);
-			this._buffer.writeUintN(value & 0xffffffff, 3);
-		}
-	}
 	
 	writeString(value) {
 		this._writeStringData(this.STRING, value);
 	}
 	
-	writeObject(value) {
-		var className = value._class;
-		var propertyNames = [];
-		for (var property in value) {
-			if (property !== '_class' && value.hasOwnProperty(property))
-				propertyNames.push(property);
+	writeByteArray(value) {
+		var index = this._sharedObjects.get(value),
+			length0;
+
+		if (index !== undefined) {
+			length0 = SpearalEncoder._unsignedIntLength0(index);
+	    	this._buffer.writeUint8(this.BYTE_ARRAY | 0x04 | length0);
+	    	this._buffer.writeUintN(index, length0);
 		}
+		else {
+			this._sharedObjects.set(value, this._sharedStrings.size);
 		
-		var description = className + '#' + propertyNames.join(',');
-		this._writeStringData(this.BEAN, description);
-		
-		for (var i = 0; i < propertyNames.length; i++)
-			this.writeAny(value[propertyNames[i]]);
+			length0 = SpearalEncoder._unsignedIntLength0(value.byteLength);
+			this._buffer.writeUint8(this.BYTE_ARRAY | length0);
+			this._buffer.writeUintN(value.byteLength, length0);
+			this._buffer.writeByteArray(value);
+		}
 	}
 	
 	writeDate(value) {
@@ -265,7 +280,7 @@ class SpearalEncoder extends SpearalType {
 			year = -year;
 		}
 		
-		var length0 = this._unsignedIntLength0(year);
+		var length0 = SpearalEncoder._unsignedIntLength0(year);
 		this._buffer.writeUint8(inverse | (length0 << 4) | (value.getUTCMonth() + 1));
 		this._buffer.writeUint8(value.getUTCDate());
 		this._buffer.writeUintN(year, length0);
@@ -276,12 +291,27 @@ class SpearalEncoder extends SpearalType {
 			this._buffer.writeUint8(value.getUTCSeconds());
 		}
 		else {
-			length0 = this._unsignedIntLength0(millis);
+			length0 = SpearalEncoder._unsignedIntLength0(millis);
 			this._buffer.writeUint8((length0 << 5) | value.getUTCHours());
 			this._buffer.writeUint8(value.getUTCMinutes());
 			this._buffer.writeUint8(value.getUTCSeconds());
 			this._buffer.writeUintN(millis, length0);
 		}
+	}
+	
+	writeBean(value) {
+		var className = value._class;
+		var propertyNames = [];
+		for (var property in value) {
+			if (property !== '_class' && value.hasOwnProperty(property))
+				propertyNames.push(property);
+		}
+		
+		var description = className + '#' + propertyNames.join(',');
+		this._writeStringData(this.BEAN, description);
+		
+		for (var i = 0; i < propertyNames.length; i++)
+			this.writeAny(value[propertyNames[i]]);
 	}
 	
 	_writeStringData(type, value) {
@@ -294,7 +324,7 @@ class SpearalEncoder extends SpearalType {
 		var index = this._sharedStrings.get(value),
 			length0;
 		if (index !== undefined) {
-			length0 = this._unsignedIntLength0(index);
+			length0 = SpearalEncoder._unsignedIntLength0(index);
         	this._buffer.writeUint8(type | 0x04 | length0);
         	this._buffer.writeUintN(index, length0);
 		}
@@ -303,16 +333,22 @@ class SpearalEncoder extends SpearalType {
 			
 			value = unescape(encodeURIComponent(value));
 		
-			length0 = this._unsignedIntLength0(value.length);
+			length0 = SpearalEncoder._unsignedIntLength0(value.length);
 			this._buffer.writeUint8(type | length0);
 			this._buffer.writeUintN(value.length, length0);
 			this._buffer.writeUTF(value);
 		}
 	}
 	
-	_unsignedIntLength0(value) {
+	static _unsignedIntLength0(value) {
 		if (value <= 0xffff)
 			return (value <= 0xff ? 0 : 1);
 		return (value <= 0xffffff ? 2 : 3);
+	}
+	
+	static _isArrayBufferView(value) {
+		if (ArrayBuffer.isView)
+			return ArrayBuffer.isView(value);
+		return (value.buffer instanceof ArrayBuffer) && (value.byteLength !== undefined );
 	}
 }

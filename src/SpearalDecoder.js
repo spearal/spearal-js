@@ -148,6 +148,19 @@ class _SpearalDecoderBuffer {
 			throw "EOF: " + e;
 		}
 	}
+	
+	readByteArray(length) {
+		if (!length)
+			return new ArrayBuffer(0);
+		
+		var end = this._pos + length;
+		if (end > this._view.buffer.byteLength)
+			throw "EOF: cannot read " + length + " bytes";
+		
+		var array = this._view.buffer.slice(this._pos, end);
+		this._pos = end;
+		return array;
+	}
 }
 
 class SpearalDecoder extends SpearalType {
@@ -155,6 +168,7 @@ class SpearalDecoder extends SpearalType {
 	constructor(buffer) {
 		this._buffer = new _SpearalDecoderBuffer(buffer);
 		this._sharedStrings = [];
+		this._sharedObjects = [];
 	}
 	
 	readAny() {
@@ -174,18 +188,37 @@ class SpearalDecoder extends SpearalType {
 		
 		case this.INTEGRAL:
 			return this._readIntegral(parameterizedType);
+		case this.BIG_INTEGRAL:
+			return this._readBigIntegral(parameterizedType);
 		
 		case this.FLOATING:
 			return this._readFloating(parameterizedType);
+		case this.BIG_FLOATING:
+			return this._readBigFloating(parameterizedType);
 		
 		case this.STRING:
 			return this._readString(parameterizedType);
 			
+		case this.BYTE_ARRAY:
+			return this._readByteArray(parameterizedType);
+			
 		case this.DATE_TIME:
 			return this._readDateTime(parameterizedType);
+			
+		case this.COLLECTION:
+			return this._readCollection(parameterizedType);
+		case this.MAP:
+			return this._readMap(parameterizedType);
 		
+		case this.ENUM:
+			return this._readEnum(parameterizedType);
+		case this.CLASS:
+			return this._readClass(parameterizedType);
 		case this.BEAN:
 			return this._readBean(parameterizedType);
+		
+		default:
+			throw new "Unknown data type: " + parameterizedType + "/" + this.typeOf(parameterizedType);
 		}
 	}
 	
@@ -200,6 +233,10 @@ class SpearalDecoder extends SpearalType {
 		
 		return (((parameterizedType & 0x08) !== 0) ? -value : value);
 	}
+
+	_readBigIntegral(parameterizedType) {
+		// TODO
+	}
 	
 	_readFloating(parameterizedType) {
 		if ((parameterizedType & 0x08) === 0)
@@ -209,6 +246,10 @@ class SpearalDecoder extends SpearalType {
 		if ((parameterizedType & 0x04) !== 0)
 			v = -v;
 		return (v / 1000.0);
+	}
+	
+	_readBigFloating(parameterizedType) {
+		// TODO
 	}
 	
 	_readString(parameterizedType) {
@@ -222,27 +263,15 @@ class SpearalDecoder extends SpearalType {
 		return value;
 	}
 	
-	_readBean(parameterizedType) {
+	_readByteArray(parameterizedType) {
 		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
 		
-		var description = (
-			(parameterizedType & 0x04) !== 0 ?
-			this._sharedStrings[indexOrLength] :
-			decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
-		);
+		if ((parameterizedType & 0x08) != 0)
+			return this._sharedObjects[indexOrLength];
 		
-		console.log('_readBean: description=' + description);
-		
-		var parts = description.split('#');
-		var className = parts[0];
-		var propertyNames = parts[1].split(',');
-		
-		var value = { _class: className };
-		
-		for (var i = 0; i < propertyNames.length; i++)
-			value[propertyNames[i]] = this.readAny();
-		
-		return value;
+		var array = this._buffer.readByteArray(indexOrLength);
+		this._sharedObjects.push(array);
+		return array;
 	}
 	
 	_readDateTime(parameterizedType) {
@@ -288,6 +317,45 @@ class SpearalDecoder extends SpearalType {
 		}
 		
 		return new Date(Date.UTC(year, month, date, hours, minutes, seconds, millis));
+	}
+	
+	_readCollection(parameterizedType) {
+		// TODO
+	}
+
+	_readMap(parameterizedType) {
+		// TODO
+	}
+	
+	_readEnum(parameterizedType) {
+		// TODO
+	}
+	
+	_readClass(parameterizedType) {
+		// TODO
+	}
+	
+	_readBean(parameterizedType) {
+		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
+		
+		var description = (
+			(parameterizedType & 0x04) !== 0 ?
+			this._sharedStrings[indexOrLength] :
+			decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
+		);
+		
+		console.log('_readBean: description=' + description);
+		
+		var parts = description.split('#');
+		var className = parts[0];
+		var propertyNames = parts[1].split(',');
+		
+		var value = { _class: className };
+		
+		for (var i = 0; i < propertyNames.length; i++)
+			value[propertyNames[i]] = this.readAny();
+		
+		return value;
 	}
 }
     

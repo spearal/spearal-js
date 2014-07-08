@@ -10,7 +10,7 @@ describe('Spearal Date Coding', function() {
 		
 		var copy = new SpearalDecoder(buffer).readAny();
 		if (Number.isNaN(value.getTime()))
-			expect(copy).toEqual(null);
+			expect(copy).toBeNull();
 		else
 			expect(copy).toEqual(value);
 	}
