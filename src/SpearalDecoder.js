@@ -163,9 +163,13 @@ class _SpearalDecoderBuffer {
 	}
 }
 
-class SpearalDecoder extends SpearalType {
+class SpearalDecoder {
 
-	constructor(buffer) {
+	constructor(context, buffer) {
+		if (!(context instanceof SpearalContext))
+			throw "Parameter 'context' must be a SpearalContext";
+		if (!(buffer instanceof ArrayBuffer))
+			throw "Parameter 'buffer' must be an ArrayBuffer";
 		this._buffer = new _SpearalDecoderBuffer(buffer);
 		this._sharedStrings = [];
 		this._sharedObjects = [];
@@ -176,49 +180,49 @@ class SpearalDecoder extends SpearalType {
 	}
 	
 	_readAny(parameterizedType) {
-		switch(this.typeOf(parameterizedType)) {
+		switch(SpearalType.typeOf(parameterizedType)) {
 		
-		case this.NULL:
+		case SpearalType.NULL:
 			return null;
 		
-		case this.TRUE:
+		case SpearalType.TRUE:
 			return true;
-		case this.FALSE:
+		case SpearalType.FALSE:
 			return false;
 		
-		case this.INTEGRAL:
+		case SpearalType.INTEGRAL:
 			return this._readIntegral(parameterizedType);
-		case this.BIG_INTEGRAL:
+		case SpearalType.BIG_INTEGRAL:
 			return this._readBigIntegral(parameterizedType);
 		
-		case this.FLOATING:
+		case SpearalType.FLOATING:
 			return this._readFloating(parameterizedType);
-		case this.BIG_FLOATING:
+		case SpearalType.BIG_FLOATING:
 			return this._readBigFloating(parameterizedType);
 		
-		case this.STRING:
+		case SpearalType.STRING:
 			return this._readString(parameterizedType);
 			
-		case this.BYTE_ARRAY:
+		case SpearalType.BYTE_ARRAY:
 			return this._readByteArray(parameterizedType);
 			
-		case this.DATE_TIME:
+		case SpearalType.DATE_TIME:
 			return this._readDateTime(parameterizedType);
 			
-		case this.COLLECTION:
+		case SpearalType.COLLECTION:
 			return this._readCollection(parameterizedType);
-		case this.MAP:
+		case SpearalType.MAP:
 			return this._readMap(parameterizedType);
 		
-		case this.ENUM:
+		case SpearalType.ENUM:
 			return this._readEnum(parameterizedType);
-		case this.CLASS:
+		case SpearalType.CLASS:
 			return this._readClass(parameterizedType);
-		case this.BEAN:
+		case SpearalType.BEAN:
 			return this._readBean(parameterizedType);
 		
 		default:
-			throw new "Unknown data type: " + parameterizedType + "/" + this.typeOf(parameterizedType);
+			throw new "Unknown data type: " + parameterizedType + "/" + SpearalType.typeOf(parameterizedType);
 		}
 	}
 	

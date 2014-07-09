@@ -1,5 +1,5 @@
-Spearal Java
-============
+Spearal JavaScript
+==================
 
 ## What is Spearal?
 

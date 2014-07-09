@@ -17,32 +17,21 @@
  *
  * @author Franck WOLFF
  */
-describe('Spearal Bean Coding', function() {
+class SpearalFactory {
 	
-	var factory = new SpearalFactory();
-	
-	function encodeDecode(value, expectedSize) {
-		var encoder = factory.newEncoder();
-		encoder.writeAny(value);
-
-		var buffer = encoder.buffer;
-		if (expectedSize)
-			expect(buffer.byteLength).toEqual(expectedSize);
-		
-		var copy = factory.newDecoder(buffer).readAny();
-		expect(copy).toEqual(value);
-		return copy;
+	constructor() {
+		this._context = new SpearalContext();
 	}
 	
-	it('Test some bean', function() {
-		var bean = {
-			_class: 'org.test.MyBean',
-			name: 'John Doo'
-		};
-		encodeDecode(bean);
-		
-		bean.self = bean;
-		var copy = encodeDecode(bean);
-		expect(copy.self === copy).toBeTruthy();
-	});
-});
+	get context() {
+		return this._context;
+	}
+	
+	newEncoder() {
+		return new SpearalEncoder(this._context);
+	}
+	
+	newDecoder(buffer) {
+		return new SpearalDecoder(this._context, buffer);
+	}
+}

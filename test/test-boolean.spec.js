@@ -17,7 +17,7 @@
  *
  * @author Franck WOLFF
  */
-describe('Spearal Date Coding', function() {
+describe('Spearal Boolean Coding', function() {
 	
 	var factory = new SpearalFactory();
 	
@@ -30,18 +30,12 @@ describe('Spearal Date Coding', function() {
 			expect(buffer.byteLength).toEqual(expectedSize);
 		
 		var copy = factory.newDecoder(buffer).readAny();
-		expect(copy === null || copy instanceof Date).toBeTruthy();
-		
-		if (Number.isNaN(value.getTime()))
-			expect(copy).toBeNull();
-		else
-			expect(copy).toEqual(value);
+		expect(typeof copy === 'boolean').toBeTruthy();
+		expect(copy).toEqual(value);
 	}
 	
-	it('Test some Date', function() {
-		encodeDecode(new Date());
-		encodeDecode(new Date(0));
-		encodeDecode(new Date(Number.NaN));
-		encodeDecode(new Date(0x7fffffffffffffff));
+	it('Test some Boolean', function() {
+		encodeDecode(true, 1);
+		encodeDecode(false, 1);
 	});
 });

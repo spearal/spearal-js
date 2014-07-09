@@ -19,31 +19,31 @@
  */
 class SpearalType {
 
-	get NULL() { return 0x00; }
+	static get NULL() { return 0x00; }
 
-	get TRUE() { return 0x01; }
-	get FALSE() { return 0x02; }
+	static get TRUE() { return 0x01; }
+	static get FALSE() { return 0x02; }
 	
-	get INTEGRAL() { return 0x10; }
-	get BIG_INTEGRAL() { return 0x20; }
+	static get INTEGRAL() { return 0x10; }
+	static get BIG_INTEGRAL() { return 0x20; }
 	
-	get FLOATING() { return 0x30; }
-	get BIG_FLOATING() { return 0x40; }
+	static get FLOATING() { return 0x30; }
+	static get BIG_FLOATING() { return 0x40; }
 
-	get STRING() { return 0x50; }
+	static get STRING() { return 0x50; }
 	
-	get BYTE_ARRAY() { return 0x60; }
+	static get BYTE_ARRAY() { return 0x60; }
 
-	get DATE_TIME() { return 0x70; }
+	static get DATE_TIME() { return 0x70; }
 	
-	get COLLECTION() { return 0x80; }
-	get MAP() { return 0x90; }
+	static get COLLECTION() { return 0x80; }
+	static get MAP() { return 0x90; }
 	
-	get ENUM() { return 0xa0; }
-	get CLASS() { return 0xb0; }
-	get BEAN() { return 0xc0; }
+	static get ENUM() { return 0xa0; }
+	static get CLASS() { return 0xb0; }
+	static get BEAN() { return 0xc0; }
 	
-	typeOf(parameterizedType) {
+	static typeOf(parameterizedType) {
 		if (parameterizedType < 0x10)
 			return parameterizedType;
 		return (parameterizedType & 0xf0);

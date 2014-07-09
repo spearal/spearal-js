@@ -19,15 +19,17 @@
  */
 describe('Spearal Byte Array Coding', function() {
 	
+	var factory = new SpearalFactory();
+	
 	function encodeDecode(value, expectedSize) {
-		var encoder = new SpearalEncoder();
+		var encoder = factory.newEncoder();
 		encoder.writeAny(value);
 		
 		var buffer = encoder.buffer;
 		if (expectedSize)
 			expect(buffer.byteLength).toEqual(expectedSize);
 		
-		var copy = new SpearalDecoder(buffer).readAny();
+		var copy = factory.newDecoder(buffer).readAny();
 		expect(copy instanceof ArrayBuffer).toBeTruthy();
 		
 		if (SpearalEncoder._isArrayBufferView(value))

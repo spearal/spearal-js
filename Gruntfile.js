@@ -21,22 +21,24 @@ module.exports = function(grunt) {
 	grunt.initConfig({
 
 		traceur: {
-        	options: {
-                sourceMaps: true,
-                experimental: true,
-                blockBinding: false
-            },
-            custom: {
-                files: {
+			options: {
+				sourceMaps: true,
+				experimental: true,
+				blockBinding: false
+			},
+			custom: {
+				files: {
 					'build/spearal.js': [
 						'src/SpearalType.js',
+						'src/SpearalContext.js',
 						'src/SpearalEncoder.js',
-						'src/SpearalDecoder.js'
+						'src/SpearalDecoder.js',
+						'src/SpearalFactory.js'
 					]
-                }
-            }
-        }
-    });
+				}
+			}
+		}
+	});
 
-    grunt.loadNpmTasks('grunt-traceur');
+	grunt.loadNpmTasks('grunt-traceur');
 }
