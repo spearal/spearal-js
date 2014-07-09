@@ -28,6 +28,7 @@ describe('Spearal Class Coding', function() {
 			expect(buffer.byteLength).toEqual(expectedSize);
 		
 		var copy = new SpearalDecoder(buffer).readAny();
+		expect(typeof copy === 'function').toBeTruthy();
 		expect(copy).toEqual(value);
 	}
 	

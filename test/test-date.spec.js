@@ -28,6 +28,8 @@ describe('Spearal Date Coding', function() {
 			expect(buffer.byteLength).toEqual(expectedSize);
 		
 		var copy = new SpearalDecoder(buffer).readAny();
+		expect(copy === null || copy instanceof Date).toBeTruthy();
+		
 		if (Number.isNaN(value.getTime()))
 			expect(copy).toBeNull();
 		else

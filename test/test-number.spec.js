@@ -28,6 +28,8 @@ describe('Spearal Number Coding', function() {
 			expect(buffer.byteLength).toEqual(expectedSize);
 		
 		var copy = new SpearalDecoder(buffer).readAny();
+		expect(typeof copy === 'number').toBeTruthy();
+		
 		if (Number.isNaN(value))
 			expect(copy).toBeNaN();
 		else if (value === 0 && (1/value) === Number.NEGATIVE_INFINITY)
