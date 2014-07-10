@@ -146,7 +146,9 @@ class SpearalEncoder {
 	}
 	
 	writeAny(value) {
-		if (value === null || value === undefined)
+		value = this._context.normalize(value);
+		
+		if (value == null)
 			this.writeNull();
 		else
 			this._context.getCoder(value)(this, value);
@@ -339,11 +341,5 @@ class SpearalEncoder {
 		if (value <= 0xffff)
 			return (value <= 0xff ? 0 : 1);
 		return (value <= 0xffffff ? 2 : 3);
-	}
-	
-	static _isArrayBufferView(value) {
-		if (ArrayBuffer.isView)
-			return ArrayBuffer.isView(value);
-		return (value.buffer instanceof ArrayBuffer) && (value.byteLength !== undefined );
 	}
 }

@@ -20,116 +20,39 @@
 class SpearalContext {
 	
 	constructor() {
+		this.coderProviders = [];
 		this._codersCache = new Map();
 	}
 	
-	getCoder(value) {
+	normalize(value) {
+
+		function isArrayBufferView(value) {
+			if (ArrayBuffer.isView instanceof Function)
+				return ArrayBuffer.isView(value);
+			return (value.buffer instanceof ArrayBuffer) && (value.byteLength !== undefined);
+		}
 		
+		if (isArrayBufferView(value))
+			value = value.buffer;
+		
+		return value;
+	}
+	
+	getCoder(value) {
 		var coder = this._codersCache.get(value.constructor);
 
-		if (coder === undefined) {
-			switch (value.constructor) {
-			case Boolean:
-				coder = function(encoder, value) {
-					encoder.writeBoolean(value);
-				}
-				break;
-			case Number:
-				coder = function(encoder, value) {
-					encoder.writeFloating(value);
-				}
-				break;
-			case String:
-				coder = function(encoder, value) {
-					encoder.writeString(value);
-				}
-				break;
-			case Function:
-				if (this.isClass(value)) {
-					coder = function(encoder, value) {
-						encoder.writeClass(value);
-					}
-				}
-				else
-					coder = this.getCoder(value());
-				break;
-			case Date:
-				coder = function(encoder, value) {
-					encoder.writeDate(value);
-				}
-				break;
-			case ArrayBuffer:
-				coder = function(encoder, value) {
-					encoder.writeByteArray(value);
-				}
-				break;
-			default:
-				if (this.isArrayBufferView(value)) {
-					coder = function(encoder, value) {
-						encoder.writeByteArray(value.buffer);
-					}
-				}
-				else {
-					coder = function(encoder, value) {
-						encoder.writeBean(value);
-					}
-				}
-				break;
+		if (coder == null) {
+			var length = this.coderProviders.length;
+			for (var i = 0; i < length; i++) {
+				coder = this.coderProviders[i].getCoder(value);
+				if (coder != null)
+					break;
 			}
-			
+			if (coder == null)
+				throw "No coder for value: " + value;
 			this._codersCache.set(value.constructor, coder);
 		}
 		
 		return coder;
-	}
-	
-	isBoolean(value) {
-		return (typeof value === 'boolean');
-	}
-	
-	isIntegral(value) {
-		return false;
-	}
-	
-	isBigIntegral(value) {
-		return false;
-	}
-	
-	isFloating(value) {
-		return (value instanceof Number);
-	}
-	
-	isBigFloating(value) {
-		return false;
-	}
-	
-	isString(value) {
-		return (value instanceof String);
-	}
-	
-	isArrayBufferView(value) {
-		if (ArrayBuffer.isView instanceof Function)
-			return ArrayBuffer.isView(value);
-		return (value.buffer instanceof ArrayBuffer) && (value.byteLength !== undefined );
-	}
-	
-	isDateTime(value) {
-		return (value instanceof Date);
-	}
-	
-	isCollection(value) {
-		return (value instanceof Array || value instanceof Set);
-	}
-	
-	isMap(value) {
-		return (value instanceof Map);
-	}
-	
-	isEnum(value) {
-		return (value instanceof Symbol);
-	}
-	
-	isClass(value) {
-		return (value.name !== undefined && window[value.name] instanceof Function);
 	}
 }
