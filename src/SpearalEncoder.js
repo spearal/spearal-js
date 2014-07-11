@@ -130,15 +130,57 @@ class _SpearalEncoderBuffer {
 	}
 }
 
+class _IndexedMap extends Map {
+	
+	constructor(iterable) {
+		super(iterable);
+	}
+	
+	setIfAbsent(key) {
+		var index = this.get(key);
+		if (index !== undefined)
+			return index;
+		this.set(key, this.size);
+	}
+}
+
+class SpearalPropertyFilter {
+	
+	constructor() {
+		this._filters = new Map();
+	}
+	
+	addFilter(className, propertyNames) {
+		this._filters.set(className, propertyNames);
+	}
+	
+	getFilter(className) {
+		this._filters.get(className);
+	}
+}
+
 class SpearalEncoder {
 
-	constructor(context) {
+	constructor(context, filter = null) {
 		if (!(context instanceof SpearalContext))
-			throw "Parameter 'context' must be a SpearalContext instance";
+			throw "Parameter 'context' must be a SpearalContext instance: " + context;
+		if (filter != null && !(filter instanceof SpearalPropertyFilter))
+			throw "Parameter 'filter' must be a SpearalPropertyFilter instance: " + filter;
+		
 		this._context = context;
+		this._filter = (filter != null ? filter : new SpearalPropertyFilter());
+		
 		this._buffer = new _SpearalEncoderBuffer();
-		this._sharedStrings = new Map();
-		this._sharedObjects = new Map();
+		this._sharedStrings = new _IndexedMap();
+		this._sharedObjects = new _IndexedMap();
+	}
+	
+	get context() {
+		return this._context;
+	}
+	
+	get filter() {
+		return this._filter;
 	}
 	
 	get buffer() {
@@ -151,7 +193,7 @@ class SpearalEncoder {
 		if (value == null)
 			this.writeNull();
 		else
-			this._context.getCoder(value)(this, value);
+			this._context.getEncoder(value)(this, value);
 	}
 	
 	writeNull() {
@@ -182,6 +224,10 @@ class SpearalEncoder {
 			this._buffer.writeUintN(high32, length0);
 			this._buffer.writeUintN(value & 0xffffffff, 3);
 		}
+	}
+	
+	writeBigIntegral(value) {
+		this._writeStringData(SpearalType.BIG_INTEGRAL, value);
 	}
 
 	writeFloating(value) {
@@ -222,12 +268,16 @@ class SpearalEncoder {
 		this._buffer.writeFloat64(value);
 	}
 	
+	writeBigFloating(value) {
+		this._writeStringData(SpearalType.BIG_FLOATING, value);
+	}
+	
 	writeString(value) {
 		this._writeStringData(SpearalType.STRING, value);
 	}
 	
 	writeByteArray(value) {
-		var index = this._sharedObjects.get(value),
+		var index = this._sharedObjects.setIfAbsent(value),
 			length0;
 
 		if (index !== undefined) {
@@ -236,8 +286,6 @@ class SpearalEncoder {
 	    	this._buffer.writeUintN(index, length0);
 		}
 		else {
-			this._sharedObjects.set(value, this._sharedStrings.size);
-		
 			length0 = SpearalEncoder._unsignedIntLength0(value.byteLength);
 			this._buffer.writeUint8(SpearalType.BYTE_ARRAY | length0);
 			this._buffer.writeUintN(value.byteLength, length0);
@@ -245,7 +293,7 @@ class SpearalEncoder {
 		}
 	}
 	
-	writeDate(value) {
+	writeDateTime(value) {
 		if (Number.isNaN(value.getTime())) {
 			this.writeNull();
 			return;
@@ -281,12 +329,17 @@ class SpearalEncoder {
 		}
 	}
 	
+	writeEnum(kind, name) {
+		this._writeStringData(SpearalType.ENUM, kind);
+		this.writeString(name);
+	}
+	
 	writeClass(value) {
 		this._writeStringData(SpearalType.CLASS, value.name);
 	}
 	
 	writeBean(value) {
-		var index = this._sharedObjects.get(value);
+		var index = this._sharedObjects.setIfAbsent(value);
 		
 		if (index !== undefined) {
 			var length0 = SpearalEncoder._unsignedIntLength0(index);
@@ -294,20 +347,19 @@ class SpearalEncoder {
 	    	this._buffer.writeUintN(index, length0);
 		}
 		else {
-			this._sharedObjects.set(value, this._sharedStrings.size);
-		
 			var className = value._class;
 			var propertyNames = [];
 			for (var property in value) {
 				if (property !== '_class' && value.hasOwnProperty(property))
 					propertyNames.push(property);
 			}
+			var descriptor = new _SpearalClassDescriptor(className, propertyNames);
 			
 			var description = className + '#' + propertyNames.join(',');
-			this._writeStringData(SpearalType.BEAN, description);
+			this._writeStringData(SpearalType.BEAN, descriptor.description);
 			
-			for (var i = 0; i < propertyNames.length; i++)
-				this.writeAny(value[propertyNames[i]]);
+			for (var i = 0; i < descriptor.propertyNames.length; i++)
+				this.writeAny(value[descriptor.propertyNames[i]]);
 		}
 	}
 	
@@ -318,7 +370,7 @@ class SpearalEncoder {
 			return;
 		}
 		
-		var index = this._sharedStrings.get(value),
+		var index = this._sharedStrings.setIfAbsent(value),
 			length0;
 		if (index !== undefined) {
 			length0 = SpearalEncoder._unsignedIntLength0(index);
@@ -326,8 +378,6 @@ class SpearalEncoder {
         	this._buffer.writeUintN(index, length0);
 		}
 		else {
-			this._sharedStrings.set(value, this._sharedStrings.size);
-			
 			value = unescape(encodeURIComponent(value));
 		
 			length0 = SpearalEncoder._unsignedIntLength0(value.length);

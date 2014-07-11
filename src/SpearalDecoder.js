@@ -170,6 +170,8 @@ class SpearalDecoder {
 			throw "Parameter 'context' must be a SpearalContext";
 		if (!(buffer instanceof ArrayBuffer))
 			throw "Parameter 'buffer' must be an ArrayBuffer";
+		
+		this._context = context;
 		this._buffer = new _SpearalDecoderBuffer(buffer);
 		this._sharedStrings = [];
 		this._sharedObjects = [];
@@ -180,50 +182,55 @@ class SpearalDecoder {
 	}
 	
 	_readAny(parameterizedType) {
-		switch(SpearalType.typeOf(parameterizedType)) {
+		var type = SpearalType.typeOf(parameterizedType),
+			value = null;
+		
+		switch(type) {
 		
 		case SpearalType.NULL:
-			return null;
+			value = null; break;
 		
 		case SpearalType.TRUE:
-			return true;
+			value = true; break;
 		case SpearalType.FALSE:
-			return false;
+			value = false; break;
 		
 		case SpearalType.INTEGRAL:
-			return this._readIntegral(parameterizedType);
+			value = this._readIntegral(parameterizedType); break;
 		case SpearalType.BIG_INTEGRAL:
-			return this._readBigIntegral(parameterizedType);
+			value = this._readBigIntegral(parameterizedType); break;
 		
 		case SpearalType.FLOATING:
-			return this._readFloating(parameterizedType);
+			value = this._readFloating(parameterizedType); break;
 		case SpearalType.BIG_FLOATING:
-			return this._readBigFloating(parameterizedType);
+			value = this._readBigFloating(parameterizedType); break;
 		
 		case SpearalType.STRING:
-			return this._readString(parameterizedType);
+			value = this._readString(parameterizedType); break;
 			
 		case SpearalType.BYTE_ARRAY:
-			return this._readByteArray(parameterizedType);
+			value = this._readByteArray(parameterizedType); break;
 			
 		case SpearalType.DATE_TIME:
-			return this._readDateTime(parameterizedType);
+			value = this._readDateTime(parameterizedType); break;
 			
 		case SpearalType.COLLECTION:
-			return this._readCollection(parameterizedType);
+			value = this._readCollection(parameterizedType); break;
 		case SpearalType.MAP:
-			return this._readMap(parameterizedType);
+			value = this._readMap(parameterizedType); break;
 		
 		case SpearalType.ENUM:
-			return this._readEnum(parameterizedType);
+			value = this._readEnum(parameterizedType); break;
 		case SpearalType.CLASS:
-			return this._readClass(parameterizedType);
+			value = this._readClass(parameterizedType); break;
 		case SpearalType.BEAN:
-			return this._readBean(parameterizedType);
+			value = this._readBean(parameterizedType); break;
 		
 		default:
 			throw new "Unknown data type: " + parameterizedType + "/" + SpearalType.typeOf(parameterizedType);
 		}
+		
+		return this._context.getDecoder(type)(value);
 	}
 	
 	_readIntegral(parameterizedType) {
@@ -239,7 +246,7 @@ class SpearalDecoder {
 	}
 
 	_readBigIntegral(parameterizedType) {
-		// TODO
+		return this._readString(parameterizedType);
 	}
 	
 	_readFloating(parameterizedType) {
@@ -253,7 +260,7 @@ class SpearalDecoder {
 	}
 	
 	_readBigFloating(parameterizedType) {
-		// TODO
+		return this._readString(parameterizedType);
 	}
 	
 	_readString(parameterizedType) {
@@ -332,11 +339,16 @@ class SpearalDecoder {
 	}
 	
 	_readEnum(parameterizedType) {
-		// TODO
+		return {
+			kind: this._readString(parameterizedType),
+			name: this.readAny()
+		};
 	}
 	
 	_readClass(parameterizedType) {
-		return window[this._readString(parameterizedType)];
+		var className = this._readString(parameterizedType),
+			cls = window[className];
+		return (cls != null ? cls : className);
 	}
 	
 	_readBean(parameterizedType) {
@@ -346,19 +358,17 @@ class SpearalDecoder {
 			return this._sharedObjects[indexOrLength];
 
 		var description = (
-				(parameterizedType & 0x04) !== 0 ?
-				this._sharedStrings[indexOrLength] :
-				decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
-			),
-			parts = description.split('#'),
-			className = parts[0],
-			propertyNames = parts[1].split(','),
-			value = { _class: className };
+			(parameterizedType & 0x04) !== 0 ?
+			this._sharedStrings[indexOrLength] :
+			decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
+		);
+		var descriptor = _SpearalClassDescriptor.forDescription(description);
+		var value = { _class: descriptor.className };
 		
 		this._sharedObjects.push(value);
 		
-		for (var i = 0; i < propertyNames.length; i++)
-			value[propertyNames[i]] = this.readAny();
+		for (var i = 0; i < descriptor.propertyNames.length; i++)
+			value[descriptor.propertyNames[i]] = this.readAny();
 		
 		return value;
 	}

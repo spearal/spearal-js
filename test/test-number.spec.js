@@ -18,7 +18,7 @@
  * @author Franck WOLFF
  */
 describe('Spearal Number Coding', function() {
-	
+
 	var factory = new SpearalFactory();
 	
 	function encodeDecode(value, expectedSize) {

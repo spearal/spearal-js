@@ -19,7 +19,6 @@
  */
 module.exports = function(grunt) {
 	grunt.initConfig({
-
 		traceur: {
 			options: {
 				sourceMaps: true,

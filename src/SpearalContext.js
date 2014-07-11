@@ -17,42 +17,75 @@
  *
  * @author Franck WOLFF
  */
+
+class _SpearalClassDescriptor {
+	
+	constructor(className, propertyNames) {
+		this.className = className;
+		this.propertyNames = propertyNames;
+	}
+	
+	get description() {
+		return this.className + '#' + this.propertyNames.join(',');
+	}
+	
+	static forDescription(description) {
+		var classProperties = description.split('#');
+		return new _SpearalClassDescriptor(classProperties[0], classProperties[1].split(','));
+	}
+}
+
 class SpearalContext {
 	
 	constructor() {
-		this.coderProviders = [];
-		this._codersCache = new Map();
+		this._configurables = [];
+		
+		this._encodersCache = new Map();
+		this._decodersCache = new Map();
+	}
+	
+	get configurables() {
+		return this._configurables;
 	}
 	
 	normalize(value) {
-
-		function isArrayBufferView(value) {
-			if (ArrayBuffer.isView instanceof Function)
-				return ArrayBuffer.isView(value);
-			return (value.buffer instanceof ArrayBuffer) && (value.byteLength !== undefined);
-		}
-		
-		if (isArrayBufferView(value))
-			value = value.buffer;
-		
 		return value;
 	}
 	
-	getCoder(value) {
-		var coder = this._codersCache.get(value.constructor);
+	getEncoder(value) {
+		var type = value.constructor,
+			encoder = this._encodersCache.get(type);
 
-		if (coder == null) {
-			var length = this.coderProviders.length;
-			for (var i = 0; i < length; i++) {
-				coder = this.coderProviders[i].getCoder(value);
-				if (coder != null)
-					break;
+		if (encoder == null) {
+			for (var i = 0; i < this._configurables.length; i++) {
+				if (this._configurables[i].encoder !== undefined) {
+					if ((encoder = this._configurables[i].encoder(value)) != null)
+						break;
+				}
 			}
-			if (coder == null)
-				throw "No coder for value: " + value;
-			this._codersCache.set(value.constructor, coder);
+			if (encoder == null)
+				throw "No encoder for type: " + type;
+			this._encodersCache.set(type, encoder);
 		}
 		
-		return coder;
+		return encoder;
+	}
+	
+	getDecoder(type) {
+		var decoder = this._decodersCache.get(type);
+
+		if (decoder == null) {
+			for (var i = 0; i < this._configurables.length; i++) {
+				if (this._configurables[i].decoder !== undefined) {
+					if ((decoder = this._configurables[i].decoder(type)) != null)
+						break;
+				}
+			}
+			if (decoder == null)
+				throw "No decoder for type: " + type;
+			this._decodersCache.set(type, decoder);
+		}
+		
+		return decoder;
 	}
 }

@@ -17,47 +17,76 @@
  *
  * @author Franck WOLFF
  */
-class _SpearalStandardCoderProvider {
-	
-	getCoder(value) {
-		
-		switch (value.constructor) {
-		case Boolean:
-			return function(encoder, value) {
-				encoder.writeBoolean(value);
-			};
-		case Number:
-			return function(encoder, value) {
-				encoder.writeFloating(value);
-			};
-		case String:
-			return function(encoder, value) {
-				encoder.writeString(value);
-			};
-		case Function:
-			return function(encoder, value) {
-				encoder.writeClass(value);
-			};
-		case Date:
-			return function(encoder, value) {
-				encoder.writeDate(value);
-			};
-		case ArrayBuffer:
-			return function(encoder, value) {
-				encoder.writeByteArray(value);
-			};
-		default:
-			return function(encoder, value) {
-				encoder.writeBean(value);
-			};
-		}
-	}
-}
 class SpearalFactory {
 	
 	constructor() {
 		this._context = new SpearalContext();
-		this._context.coderProviders.push(new _SpearalStandardCoderProvider());
+		
+		this._context.configurables.push({
+			
+			encoder: function(value) {
+				switch (value.constructor) {
+
+				case Boolean:
+					return function(encoder, value) {
+						encoder.writeBoolean(value);
+					};
+				
+				case Number:
+					return function(encoder, value) {
+						encoder.writeFloating(value);
+					};
+				
+				case String:
+					return function(encoder, value) {
+						encoder.writeString(value);
+					};
+				
+				case Function:
+					return function(encoder, value) {
+						encoder.writeClass(value);
+					};
+				
+				case Date:
+					return function(encoder, value) {
+						encoder.writeDateTime(value);
+					};
+				
+				case ArrayBuffer:
+					return function(encoder, value) {
+						encoder.writeByteArray(value);
+					};
+				
+				case Int8Array:
+				case Uint8Array:
+				case Int16Array:
+				case Uint16Array:
+				case Int32Array:
+				case Uint32Array:
+				case Float32Array:
+				case Float64Array:
+				case DataView:
+					return function(encoder, value) {
+						encoder.writeByteArray(value.buffer);
+					};
+				
+				default:
+					return function(encoder, value) {
+						encoder.writeBean(value);
+					};
+				}
+			},
+			
+			decoder: function(type) {
+				return function(value) {
+					return value;
+				}
+			}
+		});
+	}
+	
+	configure(configurable) {
+		this._context.configurables.unshift(configurable);
 	}
 	
 	get context() {
