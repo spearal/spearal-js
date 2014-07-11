@@ -362,13 +362,14 @@ class SpearalDecoder {
 			this._sharedStrings[indexOrLength] :
 			decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
 		);
-		var descriptor = _SpearalClassDescriptor.forDescription(description);
-		var value = { _class: descriptor.className };
+		
+		var descriptor = _SpearalClassDescriptor.forDescription(description),
+			value = this._context.getInstance(descriptor);
 		
 		this._sharedObjects.push(value);
 		
-		for (var i = 0; i < descriptor.propertyNames.length; i++)
-			value[descriptor.propertyNames[i]] = this.readAny();
+		for (var name of descriptor.propertyNames)
+			value[name] = this.readAny();
 		
 		return value;
 	}

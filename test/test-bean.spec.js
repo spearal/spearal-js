@@ -17,32 +17,90 @@
  *
  * @author Franck WOLFF
  */
+
+function Apple(color, size) {
+	this.color = color;
+	this.size = size;
+}
+
 describe('Spearal Bean Coding', function() {
 	
 	var factory = new SpearalFactory();
 	
-	function encodeDecode(value, expectedSize) {
-		var encoder = factory.newEncoder();
+	function encodeDecode(value, filter) {
+		var encoder = factory.newEncoder(filter);
 		encoder.writeAny(value);
 
-		var buffer = encoder.buffer;
-		if (expectedSize)
-			expect(buffer.byteLength).toEqual(expectedSize);
-		
-		var copy = factory.newDecoder(buffer).readAny();
-		expect(copy).toEqual(value);
-		return copy;
+		return factory.newDecoder(encoder.buffer).readAny();
 	}
 	
-	it('Test some bean', function() {
+	it('Test _class bean', function() {
 		var bean = {
 			_class: 'org.test.MyBean',
 			name: 'John Doo'
 		};
-		encodeDecode(bean);
+		var copy = encodeDecode(bean);
+		expect(copy).toEqual(bean);
 		
 		bean.self = bean;
-		var copy = encodeDecode(bean);
+		copy = encodeDecode(bean);
+		expect(copy).toEqual(bean);
 		expect(copy.self === copy).toBeTruthy();
+	});
+	
+	it('Test Apple bean', function() {
+		var bean = new Apple("green", 3);
+		
+		var copy = encodeDecode(bean);
+		expect(copy).toEqual(bean);
+		
+		bean.self = bean;
+		copy = encodeDecode(bean);
+		expect(copy instanceof Apple).toBeTruthy();
+		expect(copy).toEqual(bean);
+		expect(copy.self === copy).toBeTruthy();
+	});
+	
+	it('Test partial _class bean', function() {
+		var bean = {
+			_class: 'org.test.MyBean',
+			name: 'John Doo',
+			nickname: 'Johnny',
+			age: 12,
+			height: 1.2
+		};
+		
+		var filter = new SpearalPropertyFilter();
+		filter.set(bean._class, 'name', 'age');
+		
+		var copy = encodeDecode(bean, filter);
+		expect(copy._class).toEqual(bean._class);
+		expect(copy.name).toEqual(bean.name);
+		expect(copy.age).toEqual(bean.age);
+		expect(copy.nickname).toBeUndefined();
+		expect(copy.height).toBeUndefined();
+		
+		bean.self = bean;
+		filter.set(bean._class, 'name', 'age', 'self');
+		copy = encodeDecode(bean, filter);
+		expect(copy._class).toEqual(bean._class);
+		expect(copy.name).toEqual(bean.name);
+		expect(copy.age).toEqual(bean.age);
+		expect(copy.nickname).toBeUndefined();
+		expect(copy.height).toBeUndefined();
+		expect(copy.self === copy).toBeTruthy();
+	});
+	
+	it('Test partial Apple bean', function() {
+		var bean = new Apple("green", 3);
+		
+		var encoder = factory.newEncoder();
+		encoder.filter.set(bean.constructor.name, "color");
+		encoder.writeAny(bean);
+
+		var copy = factory.newDecoder(encoder.buffer).readAny();
+		expect(copy instanceof Apple).toBeTruthy();
+		expect(copy.color).toEqual(bean.color);
+		expect(copy.size).toBeUndefined();
 	});
 });

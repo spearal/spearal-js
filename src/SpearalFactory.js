@@ -24,6 +24,27 @@ class SpearalFactory {
 		
 		this._context.configurables.push({
 			
+			descriptor: function(value, filter) {
+				var className = value._class;
+				if (className == null)
+					className = value.constructor.name;
+				if (className == null)
+					className = '';
+				
+				if (filter != null)
+					filter = filter.get(className);
+				if (filter == null)
+					filter = SpearalPropertyFilter.ACCEPT_ALL;
+				
+				var propertyNames = [];
+				for (var property in value) {
+					if (property !== '_class' && value.hasOwnProperty(property) && filter.has(property))
+						propertyNames.push(property);
+				}
+				
+				return new _SpearalClassDescriptor(className, propertyNames);
+			},
+			
 			encoder: function(value) {
 				switch (value.constructor) {
 
@@ -77,6 +98,14 @@ class SpearalFactory {
 				}
 			},
 			
+			instantiator: function(descriptor) {
+				if (descriptor.className === '')
+					return {};
+				if (window[descriptor.className])
+					return new window[descriptor.className]();
+				return { _class: descriptor.className };
+			},
+			
 			decoder: function(type) {
 				return function(value) {
 					return value;
@@ -93,8 +122,8 @@ class SpearalFactory {
 		return this._context;
 	}
 	
-	newEncoder() {
-		return new SpearalEncoder(this._context);
+	newEncoder(filter) {
+		return new SpearalEncoder(this._context, filter);
 	}
 	
 	newDecoder(buffer) {

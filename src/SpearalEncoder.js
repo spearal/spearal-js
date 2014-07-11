@@ -150,18 +150,25 @@ class SpearalPropertyFilter {
 		this._filters = new Map();
 	}
 	
-	addFilter(className, propertyNames) {
+	set(className, ...propertyNames) {
+		if (!(propertyNames instanceof Set))
+			propertyNames = new Set(propertyNames);
 		this._filters.set(className, propertyNames);
 	}
 	
-	getFilter(className) {
-		this._filters.get(className);
+	get(className) {
+		return this._filters.get(className);
 	}
 }
+SpearalPropertyFilter.ACCEPT_ALL = {
+	has: function(value) {
+		return true;
+	}
+};
 
 class SpearalEncoder {
 
-	constructor(context, filter = null) {
+	constructor(context, filter) {
 		if (!(context instanceof SpearalContext))
 			throw "Parameter 'context' must be a SpearalContext instance: " + context;
 		if (filter != null && !(filter instanceof SpearalPropertyFilter))
@@ -347,19 +354,10 @@ class SpearalEncoder {
 	    	this._buffer.writeUintN(index, length0);
 		}
 		else {
-			var className = value._class;
-			var propertyNames = [];
-			for (var property in value) {
-				if (property !== '_class' && value.hasOwnProperty(property))
-					propertyNames.push(property);
-			}
-			var descriptor = new _SpearalClassDescriptor(className, propertyNames);
-			
-			var description = className + '#' + propertyNames.join(',');
+			var descriptor = this._context.getDescriptor(value, this._filter);
 			this._writeStringData(SpearalType.BEAN, descriptor.description);
-			
-			for (var i = 0; i < descriptor.propertyNames.length; i++)
-				this.writeAny(value[descriptor.propertyNames[i]]);
+			for (var name of descriptor.propertyNames)
+				this.writeAny(value[name]);
 		}
 	}
 	

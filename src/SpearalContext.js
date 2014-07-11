@@ -52,36 +52,52 @@ class SpearalContext {
 		return value;
 	}
 	
+	_findConfigurable(name, param = undefined) {
+		for (var configurable of this._configurables) {
+			var configurableFunction = configurable[name];
+			if (configurableFunction !== undefined) {
+				if (param !== undefined)
+					configurableFunction = configurableFunction(param);
+				if (configurableFunction !== undefined)
+					return configurableFunction;
+			}
+		}
+	}
+	
+	getDescriptor(value, filter = null) {
+		if (this._descriptor == null) {
+			if ((this._descriptor = this._findConfigurable('descriptor')) == null)
+				throw "No descriptor for value: " + value;
+		}
+		return this._descriptor(value, filter);
+	}
+	
 	getEncoder(value) {
 		var type = value.constructor,
 			encoder = this._encodersCache.get(type);
 
 		if (encoder == null) {
-			for (var i = 0; i < this._configurables.length; i++) {
-				if (this._configurables[i].encoder !== undefined) {
-					if ((encoder = this._configurables[i].encoder(value)) != null)
-						break;
-				}
-			}
-			if (encoder == null)
-				throw "No encoder for type: " + type;
+			if ((encoder = this._findConfigurable('encoder', value)) == null)
+				throw "No encoder for type: " + value;
 			this._encodersCache.set(type, encoder);
 		}
 		
 		return encoder;
 	}
 	
+	getInstance(descriptor) {
+		if (this._instantiator == null) {
+			if ((this._instantiator = this._findConfigurable('instantiator')) == null)
+				throw "No instantiator for value: " + value;
+		}
+		return this._instantiator(descriptor);
+	}
+	
 	getDecoder(type) {
 		var decoder = this._decodersCache.get(type);
 
 		if (decoder == null) {
-			for (var i = 0; i < this._configurables.length; i++) {
-				if (this._configurables[i].decoder !== undefined) {
-					if ((decoder = this._configurables[i].decoder(type)) != null)
-						break;
-				}
-			}
-			if (decoder == null)
+			if ((decoder = this._findConfigurable('decoder', type)) == null)
 				throw "No decoder for type: " + type;
 			this._decodersCache.set(type, decoder);
 		}
