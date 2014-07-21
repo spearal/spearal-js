@@ -17,52 +17,25 @@
  *
  * @author Franck WOLFF
  */
-
-function BigInteger(value) {
-	this._value = value.toString();
-}
-BigInteger.prototype.toString = function() {
-	return this._value;
-}
-
-describe('Spearal Big Floating Coding', function() {
-
-	var factory = new SpearalFactory();
+describe('Spearal Map Coding', function() {
 	
-	factory.configure({
-		
-		encoder: function(value) {
-			if (value instanceof BigInteger) return function(encoder, value) {
-				encoder.writeBigIntegral(value.toString());
-			};
-		},
-		
-		decoder: function(type) {
-			if (type === SpearalType.BIG_INTEGRAL) return function(value) {
-				return new BigInteger(value);
-			};
-		}
-	});
+	var factory = new SpearalFactory();
 	
 	function encodeDecode(value, expectedSize) {
 		var encoder = factory.newEncoder();
 		encoder.writeAny(value);
-
+		
 		var buffer = encoder.buffer;
 		if (expectedSize)
 			expect(buffer.byteLength).toEqual(expectedSize);
 		
 		var copy = factory.newDecoder(buffer).readAny();
-		expect(copy instanceof BigInteger).toBeTruthy();
 		expect(copy).toEqual(value);
-		return copy;
 	}
 	
-	it('Test some big floating', function() {
-		var big = new BigInteger("1234567890");
-		encodeDecode(big, 7);
-		
-		big = new BigInteger("123456789000000000000000000");
-		encodeDecode(big, 8);
+	it('Test some Map', function() {
+		encodeDecode(new Map());
+		encodeDecode(new Map([["key1", "value1"], ["key2", "value2"]]));
+		encodeDecode(new Map([["abc", "def"], [3, "value2"], ["key1", "value1"], ["key2", "value2"]]));
 	});
 });

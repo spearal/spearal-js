@@ -17,52 +17,34 @@
  *
  * @author Franck WOLFF
  */
-
-function BigInteger(value) {
-	this._value = value.toString();
-}
-BigInteger.prototype.toString = function() {
-	return this._value;
-}
-
-describe('Spearal Big Floating Coding', function() {
-
-	var factory = new SpearalFactory();
+describe('Spearal Collection Coding', function() {
 	
-	factory.configure({
-		
-		encoder: function(value) {
-			if (value instanceof BigInteger) return function(encoder, value) {
-				encoder.writeBigIntegral(value.toString());
-			};
-		},
-		
-		decoder: function(type) {
-			if (type === SpearalType.BIG_INTEGRAL) return function(value) {
-				return new BigInteger(value);
-			};
-		}
-	});
+	var factory = new SpearalFactory();
 	
 	function encodeDecode(value, expectedSize) {
 		var encoder = factory.newEncoder();
 		encoder.writeAny(value);
-
+		
 		var buffer = encoder.buffer;
 		if (expectedSize)
 			expect(buffer.byteLength).toEqual(expectedSize);
 		
 		var copy = factory.newDecoder(buffer).readAny();
-		expect(copy instanceof BigInteger).toBeTruthy();
-		expect(copy).toEqual(value);
-		return copy;
+		if (value instanceof Set)
+			expect(new Set(copy)).toEqual(value);
+		else
+			expect(copy).toEqual(value);
 	}
 	
-	it('Test some big floating', function() {
-		var big = new BigInteger("1234567890");
-		encodeDecode(big, 7);
-		
-		big = new BigInteger("123456789000000000000000000");
-		encodeDecode(big, 8);
+	it('Test some Array', function() {
+		encodeDecode([]);
+		encodeDecode([0, 1, 2, 3]);
+		encodeDecode([null, "", "abc", "def", "abc"]);
+	});
+	
+	it('Test some Set', function() {
+		encodeDecode(new Set());
+		encodeDecode(new Set([0, 1, 2, 3]));
+		encodeDecode(new Set([null, "", "abc", "def", "abc"]));
 	});
 });

@@ -319,6 +319,25 @@ class SpearalEncoder {
 		}
 	}
 	
+	writeCollection(value) {
+		if (!this._setAndWriteObjectReference(SpearalType.COLLECTION, value)) {
+			var size = (value instanceof Set ? value.size : value.length);
+			this._writeTypeUintN(SpearalType.COLLECTION, size);
+			for (var item of value)
+				this.writeAny(item);
+		}
+	}
+	
+	writeMap(value) {
+		if (!this._setAndWriteObjectReference(SpearalType.MAP, value)) {
+			this._writeTypeUintN(SpearalType.MAP, value.size);
+			for (var [key, val] of value) {
+				this.writeAny(key);
+				this.writeAny(val);
+			}
+		}
+	}
+	
 	writeEnum(kind, name) {
 		this._writeStringData(SpearalType.ENUM, kind);
 		this.writeString(name);

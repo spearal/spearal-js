@@ -90,6 +90,21 @@ class SpearalFactory {
 					return function(encoder, value) {
 						encoder.writeByteArray(value.buffer);
 					};
+					
+				case Array:
+					return function(encoder, value) {
+						encoder.writeCollection(value);
+					};
+					
+				case Set:
+					return function(encoder, value) {
+						encoder.writeCollection(value);
+					};
+					
+				case Map:
+					return function(encoder, value) {
+						encoder.writeMap(value);
+					};
 				
 				default:
 					return function(encoder, value) {

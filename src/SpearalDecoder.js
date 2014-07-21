@@ -286,7 +286,8 @@ class SpearalDecoder {
 			return this._sharedStrings[indexOrLength];
 		
 		var value = decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)));
-		this._sharedStrings.push(value);
+		if (value.length > 0)
+			this._sharedStrings.push(value);
 		return value;
 	}
 	
@@ -347,11 +348,30 @@ class SpearalDecoder {
 	}
 	
 	_readCollection(parameterizedType) {
-		// TODO
+		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
+		
+		if ((parameterizedType & 0x08) != 0)
+			return this._sharedObjects[indexOrLength];
+
+		var value = new Array(indexOrLength);
+		for (var i = 0; i < indexOrLength; i++)
+			value[i] = this.readAny();
+		return value;
 	}
 
 	_readMap(parameterizedType) {
-		// TODO
+		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
+		
+		if ((parameterizedType & 0x08) != 0)
+			return this._sharedObjects[indexOrLength];
+		
+		var value = new Map();
+		for (var i = 0; i < indexOrLength; i++) {
+			var key = this.readAny();
+			var val = this.readAny();
+			value.set(key, val);
+		}
+		return value;
 	}
 	
 	_readEnum(parameterizedType) {
