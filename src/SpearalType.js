@@ -17,6 +17,39 @@
  *
  * @author Franck WOLFF
  */
+
+class SpearalBigNumber {
+	
+	static charAt(index) {
+		var c = "0123456789+-.E".charAt(index);
+		if (c === "")
+			throw "Illegal big number digit index: " + index;
+		return c;
+	}
+	
+	static indexOf(charCode) {
+		switch (charCode) {
+		case 0x30: return 0; // '0'
+		case 0x31: return 1; // ...
+		case 0x32: return 2;
+		case 0x33: return 3;
+		case 0x34: return 4;
+		case 0x35: return 5;
+		case 0x36: return 6;
+		case 0x37: return 7;
+		case 0x38: return 8;
+		case 0x39: return 9; // '9'
+		
+		case 0x2b: return 10; // '+'
+		case 0x2d: return 11; // '-'
+		case 0x2e: return 12; // '.'
+		case 0x45: case 0x65: return 13; // 'E', 'e'
+		
+		default:
+			throw "Illegal big number digit code: " + charCode;
+		}
+	}
+}
 class SpearalType {
 
 	static get NULL() { return 0x00; }

@@ -218,15 +218,11 @@ class SpearalEncoder {
 			inverse = 0x08;
 		}
 
-		var length0;
-		if (value <= 0xffffffff) {
-			length0 = SpearalEncoder._unsignedIntLength0(value);
-			this._buffer.writeUint8(SpearalType.INTEGRAL | inverse | length0);
-			this._buffer.writeUintN(value, length0);
-		}
+		if (value <= 0xffffffff)
+			this._writeTypeUintN(SpearalType.INTEGRAL | inverse, value);
 		else {
-			var high32 = ((value / 0x100000000) | 0x00);
-			length0 = SpearalEncoder._unsignedIntLength0(high32);
+			var high32 = ((value / 0x100000000) | 0x00),
+				length0 = SpearalEncoder._unsignedIntLength0(high32);
 			this._buffer.writeUint8(SpearalType.INTEGRAL | inverse | (length0 + 4));
 			this._buffer.writeUintN(high32, length0);
 			this._buffer.writeUintN(value & 0xffffffff, 3);
@@ -234,7 +230,7 @@ class SpearalEncoder {
 	}
 	
 	writeBigIntegral(value) {
-		this._writeStringData(SpearalType.BIG_INTEGRAL, value);
+		this._writeBigNumberData(SpearalType.BIG_INTEGRAL, value);
 	}
 
 	writeFloating(value) {
@@ -261,11 +257,8 @@ class SpearalEncoder {
 						value1K = -value1K;
 						inverse = 0x04;
 					}
-
-					var length0 = SpearalEncoder._unsignedIntLength0(value1K);
-					this._buffer.writeUint8(SpearalType.FLOATING | 0x08 | inverse | length0);
-					this._buffer.writeUintN(value1K, length0);
-
+					
+					this._writeTypeUintN(SpearalType.FLOATING | 0x08 | inverse, value1K);
 					return;
 				}
 			}
@@ -276,7 +269,7 @@ class SpearalEncoder {
 	}
 	
 	writeBigFloating(value) {
-		this._writeStringData(SpearalType.BIG_FLOATING, value);
+		this._writeBigNumberData(SpearalType.BIG_FLOATING, value);
 	}
 	
 	writeString(value) {
@@ -284,18 +277,8 @@ class SpearalEncoder {
 	}
 	
 	writeByteArray(value) {
-		var index = this._sharedObjects.setIfAbsent(value),
-			length0;
-
-		if (index !== undefined) {
-			length0 = SpearalEncoder._unsignedIntLength0(index);
-	    	this._buffer.writeUint8(SpearalType.BYTE_ARRAY | 0x08 | length0);
-	    	this._buffer.writeUintN(index, length0);
-		}
-		else {
-			length0 = SpearalEncoder._unsignedIntLength0(value.byteLength);
-			this._buffer.writeUint8(SpearalType.BYTE_ARRAY | length0);
-			this._buffer.writeUintN(value.byteLength, length0);
+		if (!this._setAndWriteObjectReference(SpearalType.BYTE_ARRAY, value)) {
+			this._writeTypeUintN(SpearalType.BYTE_ARRAY, value.byteLength);
 			this._buffer.writeByteArray(value);
 		}
 	}
@@ -346,43 +329,63 @@ class SpearalEncoder {
 	}
 	
 	writeBean(value) {
-		var index = this._sharedObjects.setIfAbsent(value);
-		
-		if (index !== undefined) {
-			var length0 = SpearalEncoder._unsignedIntLength0(index);
-	    	this._buffer.writeUint8(SpearalType.BEAN | 0x08 | length0);
-	    	this._buffer.writeUintN(index, length0);
-		}
-		else {
+		if (!this._setAndWriteObjectReference(SpearalType.BEAN, value)) {
 			var descriptor = this._context.getDescriptor(value, this._filter);
 			this._writeStringData(SpearalType.BEAN, descriptor.description);
 			for (var name of descriptor.propertyNames)
 				this.writeAny(value[name]);
 		}
 	}
-	
+
 	_writeStringData(type, value) {
 		if (value.length === 0) {
 			this._buffer.writeUint8(type);
 			this._buffer.writeUint8(0);
 			return;
 		}
-		
-		var index = this._sharedStrings.setIfAbsent(value),
-			length0;
-		if (index !== undefined) {
-			length0 = SpearalEncoder._unsignedIntLength0(index);
-        	this._buffer.writeUint8(type | 0x04 | length0);
-        	this._buffer.writeUintN(index, length0);
-		}
-		else {
+
+		if (!this._setAndWriteStringReference(type, value)) {
 			value = unescape(encodeURIComponent(value));
-		
-			length0 = SpearalEncoder._unsignedIntLength0(value.length);
-			this._buffer.writeUint8(type | length0);
-			this._buffer.writeUintN(value.length, length0);
+			this._writeTypeUintN(type, value.length);
 			this._buffer.writeUTF(value);
 		}
+	}
+	
+	_writeBigNumberData(type, value) {
+		if (!this._setAndWriteStringReference(type, value)) {
+			var length = value.length;
+			this._writeTypeUintN(type, length);
+			for (var i = 0; i < length; ) {
+				var b = (SpearalBigNumber.indexOf(value.charCodeAt(i++)) << 4);
+				if (i < length)
+					b |= SpearalBigNumber.indexOf(value.charCodeAt(i++));
+				this._buffer.writeUint8(b);
+			}
+		}
+	}
+	
+	_setAndWriteObjectReference(type, value) {
+		var index = this._sharedObjects.setIfAbsent(value);
+		if (index !== undefined) {
+			this._writeTypeUintN(type | 0x08, index);
+        	return true;
+		}
+		return false;
+	}
+	
+	_setAndWriteStringReference(type, value) {
+		var index = this._sharedStrings.setIfAbsent(value);
+		if (index !== undefined) {
+			this._writeTypeUintN(type | 0x04, index);
+        	return true;
+		}
+		return false;
+	}
+	
+	_writeTypeUintN(type, value) {
+		var length0 = SpearalEncoder._unsignedIntLength0(value);
+		this._buffer.writeUint8(type | length0);
+		this._buffer.writeUintN(value, length0);
 	}
 	
 	static _unsignedIntLength0(value) {

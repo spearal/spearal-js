@@ -246,7 +246,10 @@ class SpearalDecoder {
 	}
 
 	_readBigIntegral(parameterizedType) {
-		return this._readString(parameterizedType);
+		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
+		if ((parameterizedType & 0x04) !== 0)
+			return this._sharedStrings[indexOrLength];
+		return this._readBigNumberData(indexOrLength);
 	}
 	
 	_readFloating(parameterizedType) {
@@ -260,7 +263,10 @@ class SpearalDecoder {
 	}
 	
 	_readBigFloating(parameterizedType) {
-		return this._readString(parameterizedType);
+		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
+		if ((parameterizedType & 0x04) !== 0)
+			return this._sharedStrings[indexOrLength];
+		return this._readBigNumberData(indexOrLength);
 	}
 	
 	_readString(parameterizedType) {
@@ -371,6 +377,22 @@ class SpearalDecoder {
 		for (var name of descriptor.propertyNames)
 			value[name] = this.readAny();
 		
+		return value;
+	}
+	
+	_readBigNumberData(length) {
+		var count = (length / 2) + (length % 2),
+			value = "";
+		
+		for (var i = 0; i < count; i++) {
+			var b = this._buffer.readUint8();
+			value += SpearalBigNumber.charAt((b & 0xf0) >>> 4);
+			if (value.length === length)
+				break;
+			value += SpearalBigNumber.charAt(b & 0x0f);
+		}
+		
+		this._sharedStrings.push(value);
 		return value;
 	}
 }
