@@ -61,5 +61,8 @@ describe('Spearal Big Floating Coding', function() {
 	it('Test some big floating', function() {
 		var big = new BigInteger("1234567890");
 		encodeDecode(big);
+		
+		big = new BigInteger("123456789000000000000000000");
+		encodeDecode(big, 8);
 	});
 });

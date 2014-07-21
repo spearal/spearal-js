@@ -230,7 +230,7 @@ class SpearalEncoder {
 	}
 	
 	writeBigIntegral(value) {
-		this._writeBigNumberData(SpearalType.BIG_INTEGRAL, value);
+		this._writeBigNumberData(SpearalType.BIG_INTEGRAL, this._exponentize(value));
 	}
 
 	writeFloating(value) {
@@ -349,6 +349,18 @@ class SpearalEncoder {
 			this._writeTypeUintN(type, value.length);
 			this._buffer.writeUTF(value);
 		}
+	}
+	
+	_exponentize(value) {
+		var length = value.length;
+		if (length > 3) {
+			var trailingZeros = 0;
+			for (var i = length - 1; i > 0 && value.charAt(i) == '0'; i--)
+				trailingZeros++;
+			if (trailingZeros > 2)
+				value = value.substring(0, length - trailingZeros) + "E" + trailingZeros;
+		}
+		return value;
 	}
 	
 	_writeBigNumberData(type, value) {

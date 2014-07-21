@@ -249,7 +249,17 @@ class SpearalDecoder {
 		var indexOrLength = this._buffer.readUintN(parameterizedType & 0x03);
 		if ((parameterizedType & 0x04) !== 0)
 			return this._sharedStrings[indexOrLength];
-		return this._readBigNumberData(indexOrLength);
+		
+		var value = this._readBigNumberData(indexOrLength),
+			iExp = value.indexOf('E');
+		if (iExp === -1)
+			return value;
+		
+		var zeros = parseInt(value.substr(iExp+1));
+		value = value.substring(0, iExp);
+		for (var i = 0; i < zeros; i++)
+			value += '0';
+		return value;
 	}
 	
 	_readFloating(parameterizedType) {
