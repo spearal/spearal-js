@@ -43,7 +43,10 @@ class SpearalBigNumber {
 		case 0x2b: return 10; // '+'
 		case 0x2d: return 11; // '-'
 		case 0x2e: return 12; // '.'
-		case 0x45: case 0x65: return 13; // 'E', 'e'
+		
+		case 0x45: // 'E'
+		case 0x65: // 'e'
+			return 13;
 		
 		default:
 			throw "Illegal big number digit code: " + charCode;
