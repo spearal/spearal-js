@@ -24,84 +24,9 @@ class _SpearalDecoderBuffer {
 		this._pos = 0;
 	}
 	
-	readInt8() {
-		try {
-			return this._view.getInt8(this._pos++);
-		}
-		catch (e) {
-			throw "EOF: " + e;
-		}
-	}
-	
 	readUint8() {
 		try {
 			return this._view.getUint8(this._pos++);
-		}
-		catch (e) {
-			throw "EOF: " + e;
-		}
-	}
-	
-	readInt16() {
-		try {
-			var value = this._view.getInt16(this._pos);
-			this._pos += 2;
-			return value;
-		}
-		catch (e) {
-			throw "EOF: " + e;
-		}
-	}
-	
-	readUint16() {
-		try {
-			var value = this._view.getUint16(this._pos);
-			this._pos += 2;
-			return value;
-		}
-		catch (e) {
-			throw "EOF: " + e;
-		}
-	}
-	
-	readInt32() {
-		try {
-			var value = this._view.getInt32(this._pos);
-			this._pos += 4;
-			return value;
-		}
-		catch (e) {
-			throw "EOF: " + e;
-		}
-	}
-	
-	readUint32() {
-		try {
-			var value = this._view.getUint32(this._pos);
-			this._pos += 4;
-			return value;
-		}
-		catch (e) {
-			throw "EOF: " + e;
-		}
-	}
-	
-	readFloat32() {
-		try {
-			var value = this._view.getFloat32(this._pos);
-			this._pos += 4;
-			return value;
-		}
-		catch (e) {
-			throw "EOF: " + e;
-		}
-	}
-	
-	readFloat64() {
-		try {
-			var value = this._view.getFloat64(this._pos);
-			this._pos += 8;
-			return value;
 		}
 		catch (e) {
 			throw "EOF: " + e;
@@ -131,6 +56,17 @@ class _SpearalDecoderBuffer {
 				break;
 			}
 			
+			return value;
+		}
+		catch (e) {
+			throw "EOF: " + e;
+		}
+	}
+	
+	readFloat64() {
+		try {
+			var value = this._view.getFloat64(this._pos);
+			this._pos += 8;
 			return value;
 		}
 		catch (e) {
@@ -266,7 +202,7 @@ class SpearalDecoder {
 		if ((parameterizedType & 0x08) === 0)
 			return this._buffer.readFloat64();
 		
-		var v = this._readIndexOrLength(parameterizedType);
+		var v = this._buffer.readUintN(parameterizedType & 0x03);
 		if ((parameterizedType & 0x04) !== 0)
 			v = -v;
 		return (v / 1000.0);
@@ -285,9 +221,11 @@ class SpearalDecoder {
 		if (SpearalDecoder._isStringReference(parameterizedType))
 			return this._sharedStrings[indexOrLength];
 		
+		if (indexOrLength === 0)
+			return "";
+		
 		var value = decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)));
-		if (value.length > 0)
-			this._sharedStrings.push(value);
+		this._sharedStrings.push(value);
 		return value;
 	}
 	
@@ -354,6 +292,7 @@ class SpearalDecoder {
 			return this._sharedObjects[indexOrLength];
 
 		var value = new Array(indexOrLength);
+		this._sharedObjects.push(value);
 		for (var i = 0; i < indexOrLength; i++)
 			value[i] = this.readAny();
 		return value;
@@ -366,6 +305,7 @@ class SpearalDecoder {
 			return this._sharedObjects[indexOrLength];
 		
 		var value = new Map();
+		this._sharedObjects.push(value);
 		for (var i = 0; i < indexOrLength; i++) {
 			var key = this.readAny();
 			var val = this.readAny();

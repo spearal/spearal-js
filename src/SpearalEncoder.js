@@ -35,50 +35,9 @@ class _SpearalEncoderBuffer {
 		return this._view.buffer.slice(0, this._size);
 	}
 
-	writeInt8(value) {
-		this._ensureCapacity(1);
-		this._view.setInt8(this._size++, value);
-	}
-
 	writeUint8(value) {
 		this._ensureCapacity(1);
 		this._view.setUint8(this._size++, value);
-	}
-
-	writeInt16(value) {
-		this._ensureCapacity(2);
-		this._view.setInt16(this._size, value);
-		this._size += 2;
-	}
-
-	writeUint16(value) {
-		this._ensureCapacity(2);
-		this._view.setUint16(this._size, value);
-		this._size += 2;
-	}
-
-	writeInt32(value) {
-		this._ensureCapacity(4);
-		this._view.setInt32(this._size, value);
-		this._size += 4;
-	}
-
-	writeUint32(value) {
-		this._ensureCapacity(4);
-		this._view.setUint32(this._size, value);
-		this._size += 4;
-	}
-	
-	writeFloat32(value) {
-		this._ensureCapacity(4);
-		this._view.setFloat32(this._size, value);
-		this._size += 4;
-	}
-	
-	writeFloat64(value) {
-		this._ensureCapacity(8);
-		this._view.setFloat64(this._size, value);
-		this._size += 8;
 	}
 	
 	writeUintN(value, length0) {
@@ -102,6 +61,12 @@ class _SpearalEncoderBuffer {
 			this._view.setUint8(this._size++, value);
 			break;
 		}
+	}
+	
+	writeFloat64(value) {
+		this._ensureCapacity(8);
+		this._view.setFloat64(this._size, value);
+		this._size += 8;
 	}
 	
 	writeUTF(utf) {
