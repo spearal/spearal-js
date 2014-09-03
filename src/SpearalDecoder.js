@@ -217,16 +217,7 @@ class SpearalDecoder {
 	
 	_readString(parameterizedType) {
 		var indexOrLength = this._readIndexOrLength(parameterizedType);
-		
-		if (SpearalDecoder._isStringReference(parameterizedType))
-			return this._sharedStrings[indexOrLength];
-		
-		if (indexOrLength === 0)
-			return "";
-		
-		var value = decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)));
-		this._sharedStrings.push(value);
-		return value;
+		return this._readStringData(parameterizedType, indexOrLength);
 	}
 	
 	_readByteArray(parameterizedType) {
@@ -333,13 +324,8 @@ class SpearalDecoder {
 		if (SpearalDecoder._isObjectReference(parameterizedType))
 			return this._sharedObjects[indexOrLength];
 
-		var description = (
-			(parameterizedType & 0x04) !== 0 ?
-			this._sharedStrings[indexOrLength] :
-			decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)))
-		);
-		
-		var descriptor = _SpearalClassDescriptor.forDescription(description),
+		var description = this._readStringData(parameterizedType, indexOrLength),
+			descriptor = _SpearalClassDescriptor.forDescription(description),
 			value = this._context.getInstance(descriptor);
 		
 		this._sharedObjects.push(value);
@@ -368,6 +354,18 @@ class SpearalDecoder {
 	
 	_readIndexOrLength(parameterizedType) {
 		return this._buffer.readUintN(parameterizedType & 0x03);
+	}
+	
+	_readStringData(parameterizedType, indexOrLength) {
+		if (SpearalDecoder._isStringReference(parameterizedType))
+			return this._sharedStrings[indexOrLength];
+		
+		if (indexOrLength === 0)
+			return "";
+		
+		var value = decodeURIComponent(escape(this._buffer.readUTF(indexOrLength)));
+		this._sharedStrings.push(value);
+		return value;
 	}
 	
 	static _isObjectReference(parameterizedType) {
