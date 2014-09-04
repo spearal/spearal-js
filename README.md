@@ -27,6 +27,8 @@ The spearal.js file can then be found in the `build` directory.
 
 ## How to run the tests?
 
+Tests are ran with [karma](http://karma-runner.github.io/) and configured to use a Chrome browser. 
+
 ````sh
 $ ./node_modules/.bin/karma start &
 $ ./node_modules/.bin/karma run
