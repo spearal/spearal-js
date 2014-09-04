@@ -22,7 +22,7 @@ module.exports = function(config) {
 		basePath: '',
 		frameworks: ['jasmine'],
 		files: [
-			'node_modules/grunt-traceur/node_modules/traceur/bin/traceur-runtime.js',
+			'node_modules/traceur/bin/traceur-runtime.js',
 			'build/*.js',
 			'test/*.spec.js'
 		],
