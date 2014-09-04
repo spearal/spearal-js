@@ -9,19 +9,25 @@ Spearal-JS is the JavaScript implementation of the Spearal serialization format.
 
 ## How to get and build the project?
 
-You need to have [node.js](http://nodejs.org/) and [grunt](http://gruntjs.com/) installed.
+You need to have [node.js](http://nodejs.org/) installed.
 
 ````sh
 $ git clone https://github.com/spearal/spearal-js.git
 $ cd spearal-js
-$ npm install grunt --save-dev
-$ npm install grunt-traceur --save-dev
+$ npm install
 ````
 
 You can build the spearal library by running:
 
 ````sh
-$ grunt traceur
+$ ./traceur.sh
 ````
 
-The spearal.js file can then be found in the `build/libs/` directory.
+The spearal.js file can then be found in the `build` directory.
+
+## How to run the tests?
+
+````sh
+$ ./node_modules/.bin/karma start &
+$ ./node_modules/.bin/karma run
+````
