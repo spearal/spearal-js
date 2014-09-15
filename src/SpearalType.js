@@ -18,6 +18,12 @@
  * @author Franck WOLFF
  */
 
+class Spearal {
+	
+	static get APPLICATION_SPEARAL() { return "application/spearal"; }
+	static get PROPERTY_FILTER_HEADER() { return "Spearal-PropertyFilter"; }
+}
+
 class SpearalBigNumber {
 	
 	static charAt(index) {
@@ -53,6 +59,7 @@ class SpearalBigNumber {
 		}
 	}
 }
+
 class SpearalType {
 
 	static get NULL() { return 0x00; }
