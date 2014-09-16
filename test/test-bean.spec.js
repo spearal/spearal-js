@@ -103,4 +103,8 @@ describe('Spearal Bean Coding', function() {
 		expect(copy.color).toEqual(bean.color);
 		expect(copy.size).toBeUndefined();
 	});
+	
+	it('Test filter header', function() {
+		expect(Spearal.filterHeader("a.b.c.Bla")).toEqual("a.b.c.Bla#");
+	});
 });
