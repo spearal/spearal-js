@@ -1,6 +1,6 @@
 {
   "name": "spearal",
-  "version": "0.1.0-SNAPSHOT",
+  "version": "0.2.0-SNAPSHOT",
   "license": "Apache-2.0",
   "author": "Franck WOLFF & William DRAI",
   "description": "Spearal is a compact binary format for exchanging arbitrary complex data between various endpoints such as Java EE, JavaScript / HTML, Android and iOS applications",
