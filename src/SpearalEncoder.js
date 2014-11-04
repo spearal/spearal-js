@@ -95,20 +95,6 @@ class _SpearalEncoderBuffer {
 	}
 }
 
-class _IndexedMap extends Map {
-	
-	constructor(iterable) {
-		super(iterable);
-	}
-	
-	setIfAbsent(key) {
-		var index = this.get(key);
-		if (index !== undefined)
-			return index;
-		this.set(key, this.size);
-	}
-}
-
 class SpearalPropertyFilter {
 	
 	constructor() {
@@ -143,8 +129,8 @@ class SpearalEncoder {
 		this._filter = (filter != null ? filter : new SpearalPropertyFilter());
 		
 		this._buffer = new _SpearalEncoderBuffer();
-		this._sharedStrings = new _IndexedMap();
-		this._sharedObjects = new _IndexedMap();
+		this._sharedStrings = new Map();
+		this._sharedObjects = new Map();
 	}
 	
 	get context() {
@@ -361,20 +347,22 @@ class SpearalEncoder {
 	}
 	
 	_setAndWriteObjectReference(type, value) {
-		var index = this._sharedObjects.setIfAbsent(value);
+		var index = this._sharedObjects.get(value);
 		if (index !== undefined) {
 			this._writeTypeUintN(type | 0x08, index);
         	return true;
 		}
+		this._sharedObjects.set(value, this._sharedObjects.size);
 		return false;
 	}
 	
 	_setAndWriteStringReference(type, value) {
-		var index = this._sharedStrings.setIfAbsent(value);
+		var index = this._sharedStrings.get(value);
 		if (index !== undefined) {
 			this._writeTypeUintN(type | 0x04, index);
         	return true;
 		}
+		this._sharedStrings.set(value, this._sharedStrings.size);
 		return false;
 	}
 	
