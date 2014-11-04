@@ -13,7 +13,7 @@
   "bugs": { "url": "https://github.com/spearal/spearal-js/issues" },
   "devDependencies": {
   	"rsvp": "3.0.13",
-  	"traceur": "0.0.60",
+  	"traceur": "0.0.72",
   	"karma": "0.12.23",
     "karma-cli": "0.0.4",
     "karma-jasmine": "0.1.5",
